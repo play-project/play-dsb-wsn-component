@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.Properties;
+import java.util.logging.Level;
 
 import javax.jbi.JBIException;
 import javax.xml.namespace.QName;
@@ -129,6 +130,13 @@ public class Component extends org.petalslink.dsb.jbi.se.wsn.Component {
 		try {
 
 			List<Topic> topics = getEventGovernance(reg).getTopics();
+			
+			if (getLogger().isLoggable(Level.INFO)) {
+				getLogger().info("Available topics : ");
+				for (Topic topic : topics) {
+					getLogger().info(topic.toString());
+				}
+			}
 			result = TopicSetHelper.getWSNDocument(topics);
 
 		} catch (Exception e) {

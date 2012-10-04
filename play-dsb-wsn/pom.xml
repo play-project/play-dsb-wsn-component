@@ -25,9 +25,14 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>13.0.1</version>
+		</dependency>
+		<dependency>
 			<artifactId>dsb-wsn-jbise</artifactId>
 			<groupId>org.ow2.petals.dsb</groupId>
-			<version>1.0.0</version>
+			<version>1.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<artifactId>play-serviceregistry-api</artifactId>

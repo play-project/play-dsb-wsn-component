@@ -21,6 +21,7 @@ package org.ow2.play.dsb.wsn.component;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -35,8 +36,12 @@ import org.ow2.play.service.registry.api.Registry;
 import org.ow2.play.service.registry.api.RegistryException;
 import org.petalslink.dsb.cxf.CXFHelper;
 import org.petalslink.dsb.jbi.se.wsn.NotificationEngine;
+import org.petalslink.dsb.jbi.se.wsn.TopicSetHelper;
 import org.petalslink.dsb.notification.commons.SOAUtil;
 import org.w3c.dom.Document;
+
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 
 /**
  * This component gets topics from the governance service and launch all the
@@ -58,9 +63,17 @@ public class Component extends org.petalslink.dsb.jbi.se.wsn.Component {
 		} catch (IOException e) {
 		}
 
+		// get the initial toic set from the governance component
 		Document topicsDOM = getTopicSet();
 		if (topicsDOM == null) {
-			throw new JBIException("Can not get the topics from the governance");
+			getLogger().warning("Can not get a list of topics to use in the component!");
+			
+			// create an empty topicset
+			topicsDOM = TopicSetHelper
+					.getWSNDocument(new ArrayList<org.petalslink.dsb.jbi.se.wsn.api.Topic>());
+			// TODO : Expose the component stuff for later initialization!
+			// TODO : Send an alert to someone...
+			//throw new JBIException("Can not get the topics from the governance");
 		}
 
 		Document tnsDOM = getTNS();
@@ -107,7 +120,7 @@ public class Component extends org.petalslink.dsb.jbi.se.wsn.Component {
 	 * @return
 	 * @throws JBIException
 	 */
-	protected Document getTopicSet() throws JBIException {
+	public Document getTopicSet() {
 		Document result = null;
 
 		Properties play = new Properties();
@@ -137,11 +150,25 @@ public class Component extends org.petalslink.dsb.jbi.se.wsn.Component {
 					getLogger().info(topic.toString());
 				}
 			}
-			result = TopicSetHelper.getWSNDocument(topics);
+			
+			result = TopicSetHelper.getWSNDocument(Lists
+					.transform(
+							topics,
+							new Function<Topic, org.petalslink.dsb.jbi.se.wsn.api.Topic>() {
+								@Override
+								public org.petalslink.dsb.jbi.se.wsn.api.Topic apply(
+										Topic t) {
+									getLogger().fine("Transforming topic " + t);
+									org.petalslink.dsb.jbi.se.wsn.api.Topic result = new org.petalslink.dsb.jbi.se.wsn.api.Topic();
+									result.name = t.getName();
+									result.ns = t.getNs();
+									result.prefix = t.getPrefix();
+									return result;
+								}
+							}));
 
 		} catch (Exception e) {
 			e.printStackTrace();
-			throw new JBIException(e);
 		}
 		return result;
 	}

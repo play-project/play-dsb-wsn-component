@@ -1,6 +1,4 @@
 <wstop:TopicSet xmlns:wstop="http://docs.oasis-open.org/wsn/t-1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xhtml="http://www.w3.org/1999/xhtml#">
 	<itg:BusinessIntegrationTopic wstop:topic="true" xmlns:itg="http://www.petalslink.org/integration/test/1.0" />
-	<itg:RemoveMe wstop:topic="true" xmlns:itg="http://www.petalslink.org/integration/test/1.0" />
-	<itg:RemoveMeFoo wstop:topic="true" xmlns:itg="http://www.petalslink.org/integration/test/1.0" />
-	<itg:RemoveMeBar wstop:topic="true" xmlns:itg="http://www.petalslink.org/integration/test/1.0" />
+	<itg:BusinessIntegrationTopic2 wstop:topic="true" xmlns:itg="http://www.petalslink.org/integration/test/1.0" />
 </wstop:TopicSet> 

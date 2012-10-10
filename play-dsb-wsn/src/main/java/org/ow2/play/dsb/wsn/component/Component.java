@@ -30,6 +30,7 @@ import javax.jbi.JBIException;
 import javax.xml.namespace.QName;
 
 import org.ow2.play.governance.api.EventGovernance;
+import org.ow2.play.governance.api.TopicAware;
 import org.ow2.play.governance.api.bean.Topic;
 import org.ow2.play.service.registry.api.Constants;
 import org.ow2.play.service.registry.api.Registry;
@@ -171,6 +172,13 @@ public class Component extends org.petalslink.dsb.jbi.se.wsn.Component {
 			e.printStackTrace();
 		}
 		return result;
+	}
+	
+	@Override
+	protected void doAddServices() {
+		getLogger().info("Adding PLAY Web services");
+		TopicAware service = new TopicAwareService(this.managementService, getLogger());
+		this.ws.add(getService(TopicAware.class, service, "PlayTopic"));
 	}
 
 	protected EventGovernance getEventGovernance(String reg)

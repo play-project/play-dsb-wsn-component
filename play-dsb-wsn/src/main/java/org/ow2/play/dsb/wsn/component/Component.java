@@ -38,6 +38,7 @@ import org.ow2.play.service.registry.api.RegistryException;
 import org.petalslink.dsb.cxf.CXFHelper;
 import org.petalslink.dsb.jbi.se.wsn.NotificationEngine;
 import org.petalslink.dsb.jbi.se.wsn.TopicSetHelper;
+import org.petalslink.dsb.jbi.se.wsn.api.MonitoringService;
 import org.petalslink.dsb.notification.commons.SOAUtil;
 import org.w3c.dom.Document;
 
@@ -67,14 +68,16 @@ public class Component extends org.petalslink.dsb.jbi.se.wsn.Component {
 		// get the initial toic set from the governance component
 		Document topicsDOM = getTopicSet();
 		if (topicsDOM == null) {
-			getLogger().warning("Can not get a list of topics to use in the component!");
-			
+			getLogger().warning(
+					"Can not get a list of topics to use in the component!");
+
 			// create an empty topicset
 			topicsDOM = TopicSetHelper
 					.getWSNDocument(new ArrayList<org.petalslink.dsb.jbi.se.wsn.api.Topic>());
 			// TODO : Expose the component stuff for later initialization!
 			// TODO : Send an alert to someone...
-			//throw new JBIException("Can not get the topics from the governance");
+			// throw new
+			// JBIException("Can not get the topics from the governance");
 		}
 
 		Document tnsDOM = getTNS();
@@ -89,7 +92,8 @@ public class Component extends org.petalslink.dsb.jbi.se.wsn.Component {
 
 		if (engine == null) {
 			engine = new NotificationEngine(getLogger(), serviceName,
-					interfaceName, endpointName, getClient());
+					interfaceName, endpointName, getClient(),
+					getMonitoringService());
 		}
 		this.engine.init(topicsDOM, tnsDOM);
 	}
@@ -124,19 +128,7 @@ public class Component extends org.petalslink.dsb.jbi.se.wsn.Component {
 	public Document getTopicSet() {
 		Document result = null;
 
-		Properties play = new Properties();
-		try {
-			play.load(Component.class.getClassLoader().getResourceAsStream(
-					"play.cfg"));
-		} catch (Exception e) {
-			getLogger()
-					.warning(
-							"Can not find the PLAY configuration file in the DSB, please add play.cfg in the container. Running in dowgraded mode...");
-		}
-
-		String reg = play.getProperty("play.registry",
-				"http://localhost:8080/registry/RegistryService");
-
+		String reg = getRegistryEndpoint();
 		getLogger().info(
 				"Initializing topics from the governance engine running at "
 						+ reg);
@@ -144,40 +136,43 @@ public class Component extends org.petalslink.dsb.jbi.se.wsn.Component {
 		try {
 
 			List<Topic> topics = getEventGovernance(reg).getTopics();
-			
+
 			if (getLogger().isLoggable(Level.INFO)) {
 				getLogger().info("Available topics : ");
 				for (Topic topic : topics) {
 					getLogger().info(topic.toString());
 				}
 			}
-			
-			result = TopicSetHelper.getWSNDocument(Lists
-					.transform(
-							topics,
-							new Function<Topic, org.petalslink.dsb.jbi.se.wsn.api.Topic>() {
-								@Override
-								public org.petalslink.dsb.jbi.se.wsn.api.Topic apply(
-										Topic t) {
-									getLogger().fine("Transforming topic " + t);
-									org.petalslink.dsb.jbi.se.wsn.api.Topic result = new org.petalslink.dsb.jbi.se.wsn.api.Topic();
-									result.name = t.getName();
-									result.ns = t.getNs();
-									result.prefix = t.getPrefix();
-									return result;
-								}
-							}));
+
+			result = TopicSetHelper
+					.getWSNDocument(Lists
+							.transform(
+									topics,
+									new Function<Topic, org.petalslink.dsb.jbi.se.wsn.api.Topic>() {
+										@Override
+										public org.petalslink.dsb.jbi.se.wsn.api.Topic apply(
+												Topic t) {
+											getLogger().fine(
+													"Transforming topic " + t);
+											org.petalslink.dsb.jbi.se.wsn.api.Topic result = new org.petalslink.dsb.jbi.se.wsn.api.Topic();
+											result.name = t.getName();
+											result.ns = t.getNs();
+											result.prefix = t.getPrefix();
+											return result;
+										}
+									}));
 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return result;
 	}
-	
+
 	@Override
 	protected void doAddServices() {
 		getLogger().info("Adding PLAY Web services");
-		TopicAware service = new TopicAwareService(this.managementService, getLogger());
+		TopicAware service = new TopicAwareService(this.managementService,
+				getLogger());
 		this.ws.add(getService(TopicAware.class, service, "PlayTopic"));
 	}
 
@@ -190,4 +185,50 @@ public class Component extends org.petalslink.dsb.jbi.se.wsn.Component {
 				EventGovernance.class);
 	}
 
+	protected synchronized MonitoringService getMonitoringService() {
+		if (monitoringService == null) {
+			try {
+				monitoringService = new JSONMonitoringService(
+						getMonitoringEndpoint());
+			} catch (RegistryException e) {
+				e.printStackTrace();
+			}
+		}
+		return monitoringService;
+	}
+
+	/**
+	 * TODO
+	 * 
+	 * @return
+	 * @throws RegistryException
+	 */
+	private String getMonitoringEndpoint() throws RegistryException {
+		String reg = getRegistryEndpoint();
+		String result = null;
+		Registry registry = CXFHelper
+				.getClientFromFinalURL(reg, Registry.class);
+		String monitoring = registry.get(Constants.MONITORING_DSB_WSN);
+		if (monitoring == null) {
+			result = "http://localhost:3000/monitoring/dsb/wsn/";
+		} else {
+			result = monitoring;
+		}
+		return result;
+	}
+
+	protected String getRegistryEndpoint() {
+		Properties play = new Properties();
+		try {
+			play.load(Component.class.getClassLoader().getResourceAsStream(
+					"play.cfg"));
+		} catch (Exception e) {
+			getLogger()
+					.warning(
+							"Can not find the PLAY configuration file in the DSB, please add play.cfg in the container. Running in dowgraded mode...");
+		}
+		return play.getProperty("play.registry",
+				"http://localhost:8080/registry/RegistryService");
+
+	}
 }

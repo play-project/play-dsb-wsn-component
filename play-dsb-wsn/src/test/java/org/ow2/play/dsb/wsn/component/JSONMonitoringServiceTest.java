@@ -20,6 +20,7 @@
 package org.ow2.play.dsb.wsn.component;
 
 import java.io.IOException;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -62,53 +63,62 @@ public class JSONMonitoringServiceTest extends TestCase {
 		super.tearDown();
 	}
 
-	public void testJSON() {
-		
-		
+	public void testJSON() throws WSNException {
+
 		final AtomicLong counter = new AtomicLong(0);
 		final CountDownLatch latch = new CountDownLatch(100);
 
-		/*
-		Server server = new Server(8038);
-		server.setHandler(new AbstractHandler() {
-
-			@Override
-			public void handle(String target, Request baseRequest,
-					HttpServletRequest request, HttpServletResponse response)
-					throws IOException, ServletException {
-				System.out.println("Got request : "
-						+ IOUtils.toString(request.getInputStream()));
-				// counter.incrementAndGet();
-				latch.countDown();
-			}
-		});
-		try {
-			server.start();
-		} catch (Exception e) {
-			fail();
-		}
-		 */
-		
 		JSONMonitoringService service = new JSONMonitoringService(
-				"http://localhost:3000/monitoring/dsb/wsn/");
+				"http://localhost:3000/api/v1/monitoring/wsn/");
 		Topic t = new Topic();
 		t.name = "TestTopic";
 		t.ns = "http://play.ow2.org";
 		t.prefix = "play";
 		long start = System.currentTimeMillis();
+
+		service.newInNotifyInput(UUID.randomUUID().toString(), null, t,
+				System.currentTimeMillis());
+
+		Random r = new Random();
+		int j = 0;
+
 		for (int i = 0; i < 10000; i++) {
-			try {
-				long a = System.currentTimeMillis();
-				service.newInNotifyInput(UUID.randomUUID().toString(), null, t,
-						System.currentTimeMillis());
-				System.out.println("Sent in " + (System.currentTimeMillis() - a));
-			} catch (WSNException e) {
+			if (j++ == 10) {
+				j = 0;
 			}
 			try {
-				Thread.sleep(133);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+
+				long a = System.currentTimeMillis();
+				service.newInNotifyError(UUID.randomUUID().toString(), null,
+						"toin", t, System.currentTimeMillis(), new Exception(
+								"OHOOH"));
+
+				try {
+					Thread.sleep(r.nextInt(500));
+				} catch (InterruptedException e) {
+				}
+
+				t.name = "TestTopic" + j;
+				service.newOutNotifyError(UUID.randomUUID().toString(), null,
+						"http://localhost:" + j, t, System.currentTimeMillis(),
+						new Exception("AHAHA"));
+				try {
+					Thread.sleep(r.nextInt(500));
+				} catch (InterruptedException e) {
+				}
+				service.newInNotifyInput(UUID.randomUUID().toString(), null, t,
+						System.currentTimeMillis());
+				service.newInNotifyOutput(UUID.randomUUID().toString(), null,
+						t, System.currentTimeMillis());
+
+				try {
+					Thread.sleep(r.nextInt(500));
+				} catch (InterruptedException e) {
+				}
+				System.out.println(i + " : Sent in "
+						+ (System.currentTimeMillis() - a));
+
+			} catch (WSNException e) {
 			}
 		}
 		System.out.println("SENT in " + (System.currentTimeMillis() - start));
@@ -119,6 +129,7 @@ public class JSONMonitoringServiceTest extends TestCase {
 			e.printStackTrace();
 			fail();
 		}
+
 		System.out.println("Done in " + (System.currentTimeMillis() - start));
 	}
 

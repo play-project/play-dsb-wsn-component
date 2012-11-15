@@ -22,6 +22,8 @@ package org.ow2.play.dsb.wsn.component;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.jws.WebMethod;
+
 import org.petalslink.dsb.jbi.se.wsn.api.MonitoringService;
 import org.petalslink.dsb.jbi.se.wsn.api.Topic;
 import org.petalslink.dsb.jbi.se.wsn.api.WSNException;
@@ -64,7 +66,7 @@ public class JSONMonitoringService implements MonitoringService {
 			logger.fine("Error while delivering notification to " + to);
 		}
 
-		MonitoringInfo info = new MonitoringInfo();
+		MonitoringNotificationInfo info = new MonitoringNotificationInfo();
 		info.uuid = uuid;
 		info.error = e.getMessage();
 		info.timestamp = timestamp;
@@ -80,7 +82,7 @@ public class JSONMonitoringService implements MonitoringService {
 			logger.fine("New newInNotifyInput on topic " + topic);
 		}
 
-		MonitoringInfo info = new MonitoringInfo();
+		MonitoringNotificationInfo info = new MonitoringNotificationInfo();
 		info.uuid = uuid;
 		info.timestamp = timestamp;
 		info.topic = topic;
@@ -96,7 +98,7 @@ public class JSONMonitoringService implements MonitoringService {
 			logger.fine("New newInNotifyOutput on topic " + topic);
 		}
 
-		MonitoringInfo info = new MonitoringInfo();
+		MonitoringNotificationInfo info = new MonitoringNotificationInfo();
 		info.uuid = uuid;
 		info.timestamp = timestamp;
 		info.topic = topic;
@@ -112,7 +114,7 @@ public class JSONMonitoringService implements MonitoringService {
 					+ to);
 		}
 
-		MonitoringInfo info = new MonitoringInfo();
+		MonitoringNotificationInfo info = new MonitoringNotificationInfo();
 		info.uuid = uuid;
 		info.timestamp = timestamp;
 		info.topic = topic;
@@ -129,7 +131,7 @@ public class JSONMonitoringService implements MonitoringService {
 					+ " while sending to " + to);
 		}
 
-		MonitoringInfo info = new MonitoringInfo();
+		MonitoringNotificationInfo info = new MonitoringNotificationInfo();
 		info.uuid = uuid;
 		info.timestamp = timestamp;
 		info.topic = topic;
@@ -138,8 +140,48 @@ public class JSONMonitoringService implements MonitoringService {
 		info.error = e.getMessage();
 		post(info);
 	}
+	
+	@Override
+	public void newSubscribeRequest(String uuid, String subscriber, Topic topic) throws WSNException {
+		MonitoringSubscriptionInfo info = new MonitoringSubscriptionInfo();
+		info.uuid = uuid;
+		info.subscriber = subscriber;
+		info.topic = topic;
+		info.type = "newSubscribeRequest";
+		info.timestamp = System.currentTimeMillis();
+		post(info);
+	}
 
-	protected void post(final MonitoringInfo info) {
+	@Override
+	public void newSubscribeResponse(String uuid, String subscriptionID) throws WSNException {
+		MonitoringSubscriptionInfo info = new MonitoringSubscriptionInfo();
+		info.uuid = uuid;
+		info.subscriptionID = subscriptionID;
+		info.type = "newSubscribeResponse";
+		info.timestamp = System.currentTimeMillis();
+		post(info);
+	}
+
+	@Override
+	public void newUnsubscribeRequest(String uuid, String subscriptionID) throws WSNException {
+		MonitoringSubscriptionInfo info = new MonitoringSubscriptionInfo();
+		info.uuid = uuid;
+		info.subscriptionID = subscriptionID;
+		info.type = "newUnsubscribeRequest";
+		info.timestamp = System.currentTimeMillis();
+		post(info);		
+	}
+
+	@Override
+	public void newUnsubscribeResponse(String uuid) throws WSNException {
+		MonitoringSubscriptionInfo info = new MonitoringSubscriptionInfo();
+		info.uuid = uuid;
+		info.type = "newUnsubscribeResponse";
+		info.timestamp = System.currentTimeMillis();
+		post(info);		
+	}
+
+	protected void post(final MonitoringNotificationInfo info) {
 		try {
 			getAsyncHttpClient().preparePost(endpoint)
 					.addHeader("Content-Type", "application/json")
@@ -160,7 +202,34 @@ public class JSONMonitoringService implements MonitoringService {
 									+ info.uuid + "' : " + t.getMessage());
 						}
 					});
-		} catch (Exception ex) {
+		} catch (Exception ex) {ex.printStackTrace();
+			logger.warning("Error while sending monitoring information : "
+					+ ex.getMessage());
+		}
+	}
+	
+	protected void post(final MonitoringSubscriptionInfo info) {
+		try {
+			getAsyncHttpClient().preparePost(endpoint)
+					.addHeader("Content-Type", "application/json")
+					.setBody(gson.toJson(info))
+					.execute(new AsyncCompletionHandler<Response>() {
+
+						@Override
+						public Response onCompleted(Response response)
+								throws Exception {
+							logger.fine("Request is complete for UUID "
+									+ info.uuid);
+							return response;
+						}
+
+						@Override
+						public void onThrowable(Throwable t) {
+							logger.warning("HTTP failure for UUID '"
+									+ info.uuid + "' : " + t.getMessage());
+						}
+					});
+		} catch (Exception ex) {ex.printStackTrace();
 			logger.warning("Error while sending monitoring information : "
 					+ ex.getMessage());
 		}
@@ -173,5 +242,4 @@ public class JSONMonitoringService implements MonitoringService {
 		}
 		return client;
 	}
-
 }

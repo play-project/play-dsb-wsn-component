@@ -25,7 +25,7 @@ import org.petalslink.dsb.jbi.se.wsn.api.Topic;
  * @author chamerling
  * 
  */
-public class MonitoringInfo {
+public class MonitoringNotificationInfo {
 
 	/**
 	 * Correlation UUID

@@ -185,7 +185,7 @@ public class Component extends org.petalslink.dsb.jbi.se.wsn.Component {
 				EventGovernance.class);
 	}
 
-	protected synchronized MonitoringService getMonitoringService() {
+	public synchronized MonitoringService getMonitoringService() {
 		if (monitoringService == null) {
 			try {
 				monitoringService = new JSONMonitoringService(
@@ -210,7 +210,7 @@ public class Component extends org.petalslink.dsb.jbi.se.wsn.Component {
 				.getClientFromFinalURL(reg, Registry.class);
 		String monitoring = registry.get(Constants.MONITORING_DSB_WSN);
 		if (monitoring == null) {
-			result = "http://localhost:3000/monitoring/dsb/wsn/";
+			result = "http://localhost:3000/api/v1/monitoring/wsn/";
 		} else {
 			result = monitoring;
 		}
